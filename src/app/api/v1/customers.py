@@ -36,11 +36,7 @@ def list_customers(
     db: DBSession,
     current_user: CurrentUser,
 ) -> list[Customer]:
-    return list(
-        db.scalars(
-            select(Customer).order_by(Customer.id.desc())
-        )
-    )
+    return list(db.scalars(select(Customer).order_by(Customer.id.desc())))
 
 
 @router.get("/{customer_id}", response_model=CustomerResponse)
@@ -55,6 +51,24 @@ def get_customer(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Customer not found",
+        )
+
+    return customer
+
+
+@router.get("/profile", response_model=CustomerResponse)
+def get_customer_profile(
+    db: DBSession,
+    current_user: CurrentUser,
+) -> Customer:
+    customer = db.scalar(
+        select(Customer).where(Customer.email == current_user.username)
+    )
+
+    if not customer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Customer profile not found",
         )
 
     return customer
