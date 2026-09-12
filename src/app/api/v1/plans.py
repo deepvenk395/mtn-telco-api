@@ -38,10 +38,4 @@ def list_plans(
     db: DBSession,
     current_user: CurrentUser,
 ) -> list[ServicePlan]:
-    return list(
-        db.scalars(
-            select(ServicePlan).where(
-                ServicePlan.status == "ACTIVE"
-            )
-        )
-    )
+    return list(db.scalars(select(ServicePlan).where(ServicePlan.status == "ACTIVE")))

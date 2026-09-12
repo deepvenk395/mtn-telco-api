@@ -30,11 +30,7 @@ def create_subscriber(
             detail="Customer not found",
         )
 
-    existing = db.scalar(
-        select(Subscriber).where(
-            Subscriber.msisdn == payload.msisdn
-        )
-    )
+    existing = db.scalar(select(Subscriber).where(Subscriber.msisdn == payload.msisdn))
 
     if existing:
         raise HTTPException(

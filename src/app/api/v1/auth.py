@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
-from app.api.dependencies import DBSession, CurrentUser
+from app.api.dependencies import CurrentUser, DBSession
 from app.core.security import (
     create_access_token,
     hash_password,
@@ -23,9 +23,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
     status_code=status.HTTP_201_CREATED,
 )
 def register(payload: RegisterRequest, db: DBSession) -> TokenResponse:
-    existing = db.scalar(
-        select(User).where(User.username == payload.username)
-    )
+    existing = db.scalar(select(User).where(User.username == payload.username))
 
     if existing:
         raise HTTPException(
@@ -50,9 +48,7 @@ def register(payload: RegisterRequest, db: DBSession) -> TokenResponse:
 
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: DBSession) -> TokenResponse:
-    user = db.scalar(
-        select(User).where(User.username == payload.username)
-    )
+    user = db.scalar(select(User).where(User.username == payload.username))
 
     if not user or not verify_password(
         payload.password,
