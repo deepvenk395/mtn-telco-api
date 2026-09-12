@@ -23,9 +23,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
     status_code=status.HTTP_201_CREATED,
 )
 def register(payload: RegisterRequest, db: DBSession) -> TokenResponse:
-    existing = db.scalar(
-        select(User).where(User.username == payload.username)
-    )
+    existing = db.scalar(select(User).where(User.username == payload.username))
 
     if existing:
         raise HTTPException(
@@ -50,9 +48,7 @@ def register(payload: RegisterRequest, db: DBSession) -> TokenResponse:
 
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: DBSession) -> TokenResponse:
-    user = db.scalar(
-        select(User).where(User.username == payload.username)
-    )
+    user = db.scalar(select(User).where(User.username == payload.username))
 
     if not user or not verify_password(
         payload.password,
