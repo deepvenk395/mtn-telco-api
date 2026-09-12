@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
-from app.api.dependencies import DBSession, CurrentUser
+from app.api.dependencies import CurrentUser, DBSession
 from app.core.security import (
     create_access_token,
     hash_password,

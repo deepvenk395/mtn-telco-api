@@ -1,0 +1,185 @@
+name: MTN DevSecOps CI
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - qa
+      - bugfix
+      - prod
+      - hotfix
+
+  push:
+    branches:
+      - develop
+      - qa
+      - bugfix
+      - prod
+      - hotfix
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Code Quality & Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen --dev
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+      - name: Run tests with coverage
+        run: |
+          uv run pytest \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=70
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  sast:
+    name: SAST - Bandit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync --frozen --dev
+
+      - name: Run Bandit
+        run: |
+          uv run bandit \
+            -r src \
+            -f json \
+            -o bandit-report.json
+
+      - name: Upload Bandit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
+
+  sca:
+    name: SCA - Dependency Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync --frozen --dev
+
+      - name: Install pip-audit
+        run: uv pip install pip-audit
+
+      - name: Run dependency vulnerability scan
+        run: |
+          uv run pip-audit \
+            --format json \
+            --output pip-audit-report.json
+
+      - name: Upload SCA report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit-report
+          path: pip-audit-report.json
+
+  secret-scan:
+    name: Secret Scanning - Gitleaks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sbom:
+    name: SBOM - Python Dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync --frozen --dev
+
+      - name: Install CycloneDX
+        run: uv pip install cyclonedx-bom
+
+      - name: Generate SBOM
+        run: |
+          uv run cyclonedx-py environment \
+            --of json \
+            --output-file sbom.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-sbom
+          path: sbom.json
