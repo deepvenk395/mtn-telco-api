@@ -184,3 +184,26 @@ jobs:
         with:
           name: python-sbom
           path: sbom.json
+
+    container-security:
+    name: Container Build & Security
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --tag mtn-telco-api:${{ github.sha }} \
+            .
+
+      - name: Scan Docker image with Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: mtn-telco-api:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
