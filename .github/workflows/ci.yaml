@@ -125,6 +125,7 @@ jobs:
       - name: Run dependency vulnerability scan
         run: |
           uv run pip-audit \
+            --local \
             --format json \
             --output pip-audit-report.json
 
