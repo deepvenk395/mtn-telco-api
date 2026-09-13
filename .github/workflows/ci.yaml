@@ -195,12 +195,11 @@ jobs:
           name: python-sbom
           path: sbom.json
 
-
   # ============================================================
   # 6. CONTAINER BUILD & SECURITY
   # ============================================================
   container-security:
-    name: Container Scanning
+    name: Container Build & Security
     runs-on: ubuntu-latest
 
     steps:
