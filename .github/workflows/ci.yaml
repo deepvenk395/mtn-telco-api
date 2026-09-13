@@ -5,17 +5,13 @@ on:
     branches:
       - develop
       - qa
-      - bugfix
       - prod
-      - hotfix
 
   push:
     branches:
       - develop
       - qa
-      - bugfix
       - prod
-      - hotfix
 
 permissions:
   contents: read
@@ -25,6 +21,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+
+  # ============================================================
+  # 1. CODE QUALITY & TESTING
+  # ============================================================
   quality:
     name: Code Quality & Tests
     runs-on: ubuntu-latest
@@ -67,6 +67,10 @@ jobs:
           name: coverage-report
           path: coverage.xml
 
+
+  # ============================================================
+  # 2. SAST - STATIC APPLICATION SECURITY TESTING
+  # ============================================================
   sast:
     name: SAST - Bandit
     runs-on: ubuntu-latest
@@ -100,6 +104,10 @@ jobs:
           name: bandit-report
           path: bandit-report.json
 
+
+  # ============================================================
+  # 3. SCA - SOFTWARE COMPOSITION ANALYSIS
+  # ============================================================
   sca:
     name: SCA - Dependency Audit
     runs-on: ubuntu-latest
@@ -119,9 +127,6 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen --dev
 
-      - name: Install pip-audit
-        run: uv pip install pip-audit
-
       - name: Run dependency vulnerability scan
         run: |
           uv run pip-audit \
@@ -136,6 +141,10 @@ jobs:
           name: pip-audit-report
           path: pip-audit-report.json
 
+
+  # ============================================================
+  # 4. SECRET SCANNING
+  # ============================================================
   secret-scan:
     name: Secret Scanning - Gitleaks
     runs-on: ubuntu-latest
@@ -151,6 +160,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+
+  # ============================================================
+  # 5. SBOM - SOFTWARE BILL OF MATERIALS
+  # ============================================================
   sbom:
     name: SBOM - Python Dependencies
     runs-on: ubuntu-latest
@@ -170,9 +183,6 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen --dev
 
-      - name: Install CycloneDX
-        run: uv pip install cyclonedx-bom
-
       - name: Generate SBOM
         run: |
           uv run cyclonedx-py environment \
@@ -185,7 +195,10 @@ jobs:
           name: python-sbom
           path: sbom.json
 
-    container-security:
+  # ============================================================
+  # 6. CONTAINER BUILD & SECURITY
+  # ============================================================
+  container-security:
     name: Container Build & Security
     runs-on: ubuntu-latest
 
@@ -200,7 +213,7 @@ jobs:
             .
 
       - name: Scan Docker image with Trivy
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: mtn-telco-api:${{ github.sha }}
           format: table
